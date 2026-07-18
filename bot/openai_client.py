@@ -8,13 +8,16 @@ class OpenAIStreamer:
         self._client = AsyncOpenAI(api_key=api_key)
         self._model = model
 
-    async def stream_reply(self, messages: list[dict]) -> AsyncIterator[str]:
-        stream = await self._client.chat.completions.create(
+    async def stream_reply(
+        self, system_prompt: str, history: list[dict]
+    ) -> AsyncIterator[str]:
+        stream = await self._client.responses.create(
             model=self._model,
-            messages=messages,
+            instructions=system_prompt,
+            input=history,
+            tools=[{"type": "web_search_preview"}],
             stream=True,
         )
-        async for chunk in stream:
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta
+        async for event in stream:
+            if event.type == "response.output_text.delta":
+                yield event.delta

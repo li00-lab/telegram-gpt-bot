@@ -79,17 +79,13 @@ async def handle_mention(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await context.bot.send_chat_action(chat_id=chat.id, action=ChatAction.TYPING)
 
     store.append(chat.id, "user", question)
-    messages = [
-        {"role": "system", "content": settings.system_prompt},
-        *store.get(chat.id),
-    ]
 
     sent_message = await message.reply_text("...", reply_to_message_id=message.message_id)
 
     buffer = ""
     last_edit = 0.0
     try:
-        async for delta in streamer.stream_reply(messages):
+        async for delta in streamer.stream_reply(settings.system_prompt, store.get(chat.id)):
             buffer += delta
             now = time.monotonic()
             if now - last_edit >= EDIT_INTERVAL_SECONDS:
